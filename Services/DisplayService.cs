@@ -106,7 +106,7 @@ namespace DisplayController.Services
         public const int CDS_NORESET = 0x10000000;
 
         [DllImport("user32.dll")]
-        public static extern bool EnumDisplayDevices(string lpDevice, uint iDevNum, ref DISPLAY_DEVICE lpDisplayDevice, uint dwFlags);
+        public static extern bool EnumDisplayDevices(string? lpDevice, uint iDevNum, ref DISPLAY_DEVICE lpDisplayDevice, uint dwFlags);
 
         [DllImport("user32.dll")]
         public static extern bool EnumDisplaySettings(string lpszDeviceName, int iModeNum, ref DEVMODE lpDevMode);
@@ -127,11 +127,13 @@ namespace DisplayController.Services
             var config = new MonitorConfigCollection();
             var device = new DISPLAY_DEVICE();
             var deviceMode = new DEVMODE();
-            
+
             device.cb = Marshal.SizeOf(device);
-            
-            for (uint deviceIndex = 0; EnumDisplayDevices(string.Empty, deviceIndex, ref device, 0); deviceIndex++)
+            uint deviceIndex = 0;
+            while (EnumDisplayDevices(null, deviceIndex, ref device, 0))
             {
+                deviceIndex++;
+
                 // Only include devices that are attached to the desktop
                 if ((device.StateFlags & (int)DisplayDeviceStateFlags.AttachedToDesktop) == 0)
                     continue;
@@ -163,14 +165,7 @@ namespace DisplayController.Services
         /// </summary>
         public bool ApplyConfig(MonitorConfigCollection config)
         {
-            bool success = true;
-            
-            foreach (var monitor in config.Monitors)
-            {
-                success &= ApplyMonitorConfig(monitor);
-            }
-            
-            return success;
+            return config.Monitors.Aggregate(true, (current, monitor) => current & ApplyMonitorConfig(monitor));
         }
 
         /// <summary>
@@ -180,22 +175,22 @@ namespace DisplayController.Services
         {
             var deviceMode = new DEVMODE();
             deviceMode.dmSize = (short)Marshal.SizeOf(deviceMode);
-            
+
             if (!EnumDisplaySettings(config.DeviceName, ENUM_CURRENT_SETTINGS, ref deviceMode))
                 return false;
-            
+
             deviceMode.dmPelsWidth = config.Width;
             deviceMode.dmPelsHeight = config.Height;
             deviceMode.dmPositionX = config.X;
             deviceMode.dmPositionY = config.Y;
             deviceMode.dmDisplayOrientation = (int)config.Orientation;
-            
+
             deviceMode.dmFields = DM_PELSWIDTH | DM_PELSHEIGHT | DM_POSITION | DM_DISPLAYORIENTATION;
-            
+
             uint flags = CDS_UPDATEREGISTRY;
             if (config.IsPrimary)
                 flags |= CDS_SET_PRIMARY;
-            
+
             var result = ChangeDisplaySettingsEx(config.DeviceName, ref deviceMode, IntPtr.Zero, flags, IntPtr.Zero);
             return result == DISP_CHANGE.Successful || result == DISP_CHANGE.Restart;
         }
@@ -207,20 +202,19 @@ namespace DisplayController.Services
         {
             var config = GetCurrentConfig();
             var monitor = config.Monitors.Find(m => m.ID == id);
-            
+
             if (monitor == null)
                 return false;
-            
+
             // Set this monitor as primary
             monitor.IsPrimary = true;
-            
+
             // Set all other monitors as non-primary
-            foreach (var otherMonitor in config.Monitors)
+            foreach (var otherMonitor in config.Monitors.Where(otherMonitor => otherMonitor.ID != id))
             {
-                if (otherMonitor.ID != id)
-                    otherMonitor.IsPrimary = false;
+                otherMonitor.IsPrimary = false;
             }
-            
+
             return ApplyConfig(config);
         }
 
@@ -231,13 +225,13 @@ namespace DisplayController.Services
         {
             var config = GetCurrentConfig();
             var monitor = config.Monitors.Find(m => m.ID == id);
-            
+
             if (monitor == null)
                 return false;
-            
+
             monitor.Width = width;
             monitor.Height = height;
-            
+
             return ApplyMonitorConfig(monitor);
         }
 
@@ -247,24 +241,21 @@ namespace DisplayController.Services
         public bool SetDisplayMode(bool mirrored)
         {
             var config = GetCurrentConfig();
-            
+
             if (mirrored)
             {
                 // For mirrored mode, set all monitors to the same position
                 var primary = config.Monitors.Find(m => m.IsPrimary);
                 if (primary == null && config.Monitors.Count > 0)
                     primary = config.Monitors[0];
-                
+
                 // Only proceed if we found a primary monitor
                 if (primary != null)
                 {
-                    foreach (var monitor in config.Monitors)
+                    foreach (var monitor in config.Monitors.Where(monitor => monitor != primary))
                     {
-                        if (monitor != primary)
-                        {
-                            monitor.X = primary.X;
-                            monitor.Y = primary.Y;
-                        }
+                        monitor.X = primary.X;
+                        monitor.Y = primary.Y;
                     }
                 }
             }
@@ -273,7 +264,7 @@ namespace DisplayController.Services
                 // For extended mode, we'd need to position monitors side by side
                 // This is a simple implementation; real-world usage might need more complex positioning
                 int currentX = 0;
-                
+
                 foreach (var monitor in config.Monitors)
                 {
                     monitor.X = currentX;
@@ -281,7 +272,7 @@ namespace DisplayController.Services
                     currentX += monitor.Width;
                 }
             }
-            
+
             return ApplyConfig(config);
         }
     }

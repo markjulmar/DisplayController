@@ -10,9 +10,7 @@ namespace DisplayController
         public static int Main(string[] args)
         {
             return Parser.Default.ParseArguments<CommandLineOptions>(args)
-                .MapResult(
-                    options => RunWithOptions(options),
-                    errors => HandleParseError(errors));
+                .MapResult(RunWithOptions, HandleParseError);
         }
 
         private static int RunWithOptions(CommandLineOptions options)
@@ -80,8 +78,8 @@ namespace DisplayController
                 {
                     var parameters = options.SetResolutionParams.ToArray();
                     string id = parameters[0];
-                    
-                    if (int.TryParse(parameters[1], out int width) && 
+
+                    if (int.TryParse(parameters[1], out int width) &&
                         int.TryParse(parameters[2], out int height))
                     {
                         bool success = displayService.ChangeResolution(id, width, height);
