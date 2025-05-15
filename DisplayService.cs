@@ -1,7 +1,6 @@
 using System.Runtime.InteropServices;
-using DisplayController.Models;
 
-namespace DisplayController.Services
+namespace DisplayController
 {
     /// <summary>
     /// Provides services for monitor display configuration using Windows API
@@ -112,10 +111,10 @@ namespace DisplayController.Services
         public static extern bool EnumDisplaySettings(string lpszDeviceName, int iModeNum, ref DEVMODE lpDevMode);
 
         [DllImport("user32.dll")]
-        public static extern DISP_CHANGE ChangeDisplaySettingsEx(string lpszDeviceName, ref DEVMODE lpDevMode, IntPtr hwnd, uint dwflags, IntPtr lParam);
+        public static extern DISP_CHANGE ChangeDisplaySettingsEx(string lpszDeviceName, ref DEVMODE lpDevMode, nint hwnd, uint dwflags, nint lParam);
 
         [DllImport("user32.dll")]
-        public static extern DISP_CHANGE ChangeDisplaySettingsEx(string lpszDeviceName, IntPtr lpDevMode, IntPtr hwnd, uint dwflags, IntPtr lParam);
+        public static extern DISP_CHANGE ChangeDisplaySettingsEx(string lpszDeviceName, nint lpDevMode, nint hwnd, uint dwflags, nint lParam);
 
         #endregion
 
@@ -145,7 +144,7 @@ namespace DisplayController.Services
                 var monitorConfig = new MonitorConfig
                 {
                     DeviceName = device.DeviceName,
-                    ID = device.DeviceID,
+                    Id = device.DeviceID,
                     IsPrimary = (device.StateFlags & (int)DisplayDeviceStateFlags.PrimaryDevice) != 0,
                     Width = deviceMode.dmPelsWidth,
                     Height = deviceMode.dmPelsHeight,
@@ -191,7 +190,7 @@ namespace DisplayController.Services
             if (config.IsPrimary)
                 flags |= CDS_SET_PRIMARY;
 
-            var result = ChangeDisplaySettingsEx(config.DeviceName, ref deviceMode, IntPtr.Zero, flags, IntPtr.Zero);
+            var result = ChangeDisplaySettingsEx(config.DeviceName, ref deviceMode, nint.Zero, flags, nint.Zero);
             return result == DISP_CHANGE.Successful || result == DISP_CHANGE.Restart;
         }
 
@@ -201,7 +200,7 @@ namespace DisplayController.Services
         public bool SetPrimaryMonitor(string id)
         {
             var config = GetCurrentConfig();
-            var monitor = config.Monitors.Find(m => m.ID == id);
+            var monitor = config.Monitors.Find(m => m.Id == id);
 
             if (monitor == null)
                 return false;
@@ -210,7 +209,7 @@ namespace DisplayController.Services
             monitor.IsPrimary = true;
 
             // Set all other monitors as non-primary
-            foreach (var otherMonitor in config.Monitors.Where(otherMonitor => otherMonitor.ID != id))
+            foreach (var otherMonitor in config.Monitors.Where(otherMonitor => otherMonitor.Id != id))
             {
                 otherMonitor.IsPrimary = false;
             }
@@ -224,7 +223,7 @@ namespace DisplayController.Services
         public bool ChangeResolution(string id, int width, int height)
         {
             var config = GetCurrentConfig();
-            var monitor = config.Monitors.Find(m => m.ID == id);
+            var monitor = config.Monitors.Find(m => m.DeviceName == id || m.Id == id);
 
             if (monitor == null)
                 return false;

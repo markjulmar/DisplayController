@@ -1,7 +1,7 @@
 using CommandLine;
 using CommandLine.Text;
 
-namespace DisplayController.Options
+namespace DisplayController
 {
     /// <summary>
     /// Represents the command line options for the application
@@ -37,7 +37,7 @@ namespace DisplayController.Options
                     new("Set a monitor as primary by ID",
                         new CommandLineOptions { SetPrimaryId = "MONITOR-ID-HERE" }),
                     new("Set resolution for a monitor",
-                        new CommandLineOptions { SetResolutionParams = new[] { "MONITOR-ID-HERE", "1920", "1080" } }),
+                        new CommandLineOptions { SetResolutionParams = ["MONITOR-ID-HERE", "1920", "1080"] }),
                     new("Set display mode to extended",
                         new CommandLineOptions { SetDisplayMode = "extended" })
                 };

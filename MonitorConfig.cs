@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace DisplayController.Models
+namespace DisplayController
 {
     /// <summary>
     /// Represents the display orientation of a monitor
@@ -26,7 +26,7 @@ namespace DisplayController.Models
         /// <summary>
         /// Gets or sets the unique identifier for the monitor
         /// </summary>
-        public string ID { get; set; } = string.Empty;
+        public string Id { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets whether this monitor is primary
@@ -61,10 +61,7 @@ namespace DisplayController.Models
         /// <summary>
         /// Creates a string representation of the monitor configuration
         /// </summary>
-        public override string ToString()
-        {
-            return $"{DeviceName} ({Width}x{Height}) at ({X},{Y}) - {(IsPrimary ? "Primary" : "Secondary")}";
-        }
+        public override string ToString() => $"{DeviceName} ({Width}x{Height}) at ({X},{Y}) - {(IsPrimary ? "Primary" : "Secondary")}";
     }
 
     /// <summary>
@@ -75,43 +72,26 @@ namespace DisplayController.Models
         /// <summary>
         /// Gets or sets the list of monitor configurations
         /// </summary>
-        public List<MonitorConfig> Monitors { get; set; } = new List<MonitorConfig>();
+        public List<MonitorConfig> Monitors { get; set; } = [];
 
         /// <summary>
         /// Serializes the monitor configuration collection to JSON
         /// </summary>
-        public string ToJson()
-        {
-            var options = new JsonSerializerOptions
-            {
-                WriteIndented = true
-            };
-            return JsonSerializer.Serialize(this, options);
-        }
+        public string ToJson() => JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
 
         /// <summary>
         /// Saves the monitor configuration collection to a JSON file
         /// </summary>
-        public void SaveToFile(string filePath)
-        {
-            File.WriteAllText(filePath, ToJson());
-        }
+        public void SaveToFile(string filePath) => File.WriteAllText(filePath, ToJson());
 
         /// <summary>
         /// Deserializes monitor configuration collection from JSON
         /// </summary>
-        public static MonitorConfigCollection FromJson(string json)
-        {
-            return JsonSerializer.Deserialize<MonitorConfigCollection>(json) ?? new MonitorConfigCollection();
-        }
+        public static MonitorConfigCollection FromJson(string json) => JsonSerializer.Deserialize<MonitorConfigCollection>(json) ?? new MonitorConfigCollection();
 
         /// <summary>
         /// Loads monitor configuration collection from a JSON file
         /// </summary>
-        public static MonitorConfigCollection LoadFromFile(string filePath)
-        {
-            string json = File.ReadAllText(filePath);
-            return FromJson(json);
-        }
+        public static MonitorConfigCollection LoadFromFile(string filePath) => FromJson(File.ReadAllText(filePath));
     }
 }

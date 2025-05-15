@@ -1,7 +1,4 @@
 using CommandLine;
-using DisplayController.Models;
-using DisplayController.Services;
-using DisplayController.Options;
 
 namespace DisplayController
 {
